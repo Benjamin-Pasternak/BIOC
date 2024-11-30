@@ -6,3 +6,10 @@
 
 Notes:
 - Security implications, expecially running in an applet. May need to do some work there.
+
+
+## Things to handle:
+
+### Constructor Injection
+- Handling Optional<?> dependencies 
+- lifecycle
