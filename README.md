@@ -13,3 +13,6 @@ Notes:
 ### Constructor Injection
 - Handling Optional<?> dependencies 
 - lifecycle
+- resolving which constructor based on type and number of parameters ... like how spring does it
+should be noted that this can introduce runtime errors so this one is a hard maybe
+- 
