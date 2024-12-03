@@ -7,11 +7,9 @@ import com.github.benjaminpasternak.bioc.exceptions.CyclicDependencyException;
 import com.github.benjaminpasternak.bioc.registry.BeanRegistry;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * The BeanFactory is responsible for creating instances of beans within the IoC container.
@@ -38,6 +36,22 @@ public class BeanFactory {
 
     public <T> T create(Class<T> type) {
         // create from the constructor
+        return createWithConstructor(type, new HashSet<>());
+    }
+
+    /**
+     * Instantiates an instance of a type and its dependencies recursively,
+     * adding the created beans to the bean registry as needed.
+     * This method is intended for constructor-based dependency injection
+     * and is called by the {@code create(Class<T> type)} method.
+     *
+     * @param type The type of object to instantiate. For example, {@code Shape}.
+     * @param <T> The generic type of the object being instantiated.
+     * @return The fully instantiated object of the specified type.
+     * @throws CyclicDependencyException if a circular dependency is detected during resolution.
+     * @throws BeanInstantiationException if the object or one of its dependencies cannot be instantiated.
+     */
+    private <T> T createWithConstructor(Class<T> type) {
         return createWithConstructor(type, new HashSet<>());
     }
 
@@ -98,6 +112,48 @@ public class BeanFactory {
         }
     }
 
+    /**
+     * Injects dependencies into the fields of the given instance.
+     * This method is intended to be used after the object has been created and registered.
+     *
+     * @param instance The instance whose dependencies need to be injected.
+     * @param <T> The type of the instance.
+     * @throws BeanInstantiationException If a dependency cannot be resolved or injected.
+     */
+    private <T> void createFromField(T instance) {
+        // get the fields
+        Field[] fields = instance.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            // only inject ones we need to inject
+            if (field.isAnnotationPresent(Inject.class)) {
+                // conformity check
+                if (Modifier.isStatic(field.getModifiers())) {
+                    throw new UnsupportedOperationException("Cannot Inject into static fields: " + field.getName());
+                }
+
+                if (Modifier.isFinal(field.getModifiers())) {
+                    throw new UnsupportedOperationException("Cannot Inject into final fields: " + field.getName());
+                }
+                try {
+                    Class<?> fieldType = field.getType();
+                    // if we've already created this dependency we can simply reuse the one in bean registry
+                    Object dependency = beanRegistry.containsBean(fieldType)
+                            ? beanRegistry.resolve(fieldType)
+                            : create(fieldType);
+
+                    // ensure we can access the field
+                    field.setAccessible(true);
+                    // set the field
+                    field.set(instance, dependency);
+                } catch (Exception e) {
+                    throw new BeanInstantiationException("Failed to inject field: " + field.getName() +
+                            "in class: " + instance.getClass().getName(), e);
+                }
+            }
+        }
+    }
+
+
 
 
     /**
@@ -150,10 +206,5 @@ public class BeanFactory {
 
         throw new ConstructorSelectionException("No @Inject constructor found, and no-arg constructor is unavailable for " + type.getName());
     }
-
-
-
-
-
 
 }
