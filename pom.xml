@@ -17,7 +17,12 @@
     </properties>
 
     <dependencies>
-
+        <!--        class path scanner -->
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.10.2</version>
+        </dependency>
         <!--        Logging dependencies-->
         <dependency>
             <groupId>ch.qos.logback</groupId>

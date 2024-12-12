@@ -6,9 +6,7 @@ import com.github.benjaminpasternak.bioc.exceptions.ConstructorSelectionExceptio
 import com.github.benjaminpasternak.bioc.exceptions.CyclicDependencyException;
 import com.github.benjaminpasternak.bioc.registry.BeanRegistry;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -36,7 +34,10 @@ public class BeanFactory {
 
     public <T> T create(Class<T> type) {
         // create from the constructor
-        return createWithConstructor(type, new HashSet<>());
+        T instance = createWithConstructor(type, new HashSet<>());
+        createAndInjectFields(instance);
+
+        return instance;
     }
 
     /**
@@ -54,6 +55,7 @@ public class BeanFactory {
     private <T> T createWithConstructor(Class<T> type) {
         return createWithConstructor(type, new HashSet<>());
     }
+
 
     /**
      * Instantiates an instance of a type and its dependencies recursively,
@@ -112,6 +114,8 @@ public class BeanFactory {
         }
     }
 
+
+
     /**
      * Injects dependencies into the fields of the given instance.
      * This method is intended to be used after the object has been created and registered.
@@ -120,7 +124,7 @@ public class BeanFactory {
      * @param <T> The type of the instance.
      * @throws BeanInstantiationException If a dependency cannot be resolved or injected.
      */
-    private <T> void createFromField(T instance) {
+    private <T> void createAndInjectFields(T instance) {
         // get the fields
         Field[] fields = instance.getClass().getDeclaredFields();
         for (Field field : fields) {
@@ -137,9 +141,7 @@ public class BeanFactory {
                 try {
                     Class<?> fieldType = field.getType();
                     // if we've already created this dependency we can simply reuse the one in bean registry
-                    Object dependency = beanRegistry.containsBean(fieldType)
-                            ? beanRegistry.resolve(fieldType)
-                            : create(fieldType);
+                    Object dependency = beanRegistry.resolve(fieldType);
 
                     // ensure we can access the field
                     field.setAccessible(true);
@@ -151,6 +153,45 @@ public class BeanFactory {
                 }
             }
         }
+    }
+
+    /**
+     * Setter injection injects already created dependencies into a class via its setter method.
+     * @param instance
+     * @param <T>
+     */
+    private <T> void setterInjection(T instance) {
+        Class<?> type = instance.getClass();
+        Method[] methods = type.getMethods();
+
+        for(Method method : methods) {
+            if(isValidSetter(method)) {
+                try {
+                    Class<?> parameterType = method.getParameterTypes()[0]; // should only be one param
+                    Object parameterInstance = beanRegistry.resolve(parameterType);
+                    method.setAccessible(true);
+                    method.invoke(instance, parameterInstance);
+                } catch (Exception e) {
+                    throw new BeanInstantiationException("Failed to inject bean into setter: " + method.getName(), e);
+                }
+            }
+        }
+    }
+
+    private boolean isValidSetter(Method method) {
+        if (!method.isAnnotationPresent(Inject.class)) {
+            return false;
+        }
+
+        if (!method.getName().startsWith("set") || method.getParameterCount() != 1) {
+            return false;
+        }
+
+        if (Modifier.isStatic(method.getModifiers())) {
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -203,7 +244,6 @@ public class BeanFactory {
                 return constructor;
             }
         }
-
         throw new ConstructorSelectionException("No @Inject constructor found, and no-arg constructor is unavailable for " + type.getName());
     }
 
