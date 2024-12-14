@@ -1,16 +1,24 @@
 package com.github.benjaminpasternak.bioc.applicationContext;
 
-import com.github.benjaminpasternak.bioc.factory.BeanFactory;
+import com.github.benjaminpasternak.bioc.beanDefinition.BeanDefinition;
+import com.github.benjaminpasternak.bioc.beanDefinition.BeanDefinitionScanner;
 import com.github.benjaminpasternak.bioc.registry.BeanRegistry;
+import com.github.benjaminpasternak.bioc.registry.DefaultBeanRegistry;
+
+import java.util.List;
 
 public class DefaultApplicationContext implements ApplicationContext {
     private final BeanRegistry beanRegistry;
-    private final BeanFactory beanFactory;
+    private final BeanFactoryRefactor beanFactory;
+    private final List<BeanDefinition> beanDefinitions;
+    private volatile boolean refreshed = false; // visibility across threads
 
-    public DefaultApplicationContext(BeanRegistry beanRegistry,
-                                     BeanFactory beanFactory) {
-        this.beanRegistry = beanRegistry;
-        this.beanFactory = beanFactory;
+
+    public DefaultApplicationContext(String basePackage) {
+        this.beanRegistry = new DefaultBeanRegistry();
+        this.beanFactory = new BeanFactoryRefactor(beanRegistry);
+        BeanDefinitionScanner scanner = new BeanDefinitionScanner(basePackage);
+        this.beanDefinitions = scanner.scan();
     }
 
     @Override
@@ -33,8 +41,16 @@ public class DefaultApplicationContext implements ApplicationContext {
         return beanRegistry.containsBean(type, qualifier);
     }
 
+    // one thread can execute this method at a time with synchronized
     @Override
-    public void refresh() {
-
+    public synchronized void refresh() {
+        if (!refreshed) {
+            for (BeanDefinition beanDefinition : beanDefinitions) {
+                if (beanDefinition.isSingleton()) {
+                    beanFactory.createBean(beanDefinition);
+                }
+            }
+            refreshed = true;
+        }
     }
 }

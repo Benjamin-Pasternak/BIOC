@@ -1,4 +1,4 @@
-package com.github.benjaminpasternak.bioc.factory;
+package com.github.benjaminpasternak.bioc.applicationContext;
 
 import com.github.benjaminpasternak.bioc.annotations.Inject;
 import com.github.benjaminpasternak.bioc.exceptions.BeanInstantiationException;

@@ -1,17 +1,17 @@
 package com.github.benjaminpasternak.bioc.beanDefinition;
 
-public class BeanDefinition {
-    private final Class<?> beanType;
+public class BeanDefinition<T> {
+    private final Class<T> beanType;
     private final boolean singleton;
     private final String qualifier; // nullable
 
-    public BeanDefinition(Class<?> beanType, boolean singleton, String qualifier) {
+    public BeanDefinition(Class<T> beanType, boolean singleton, String qualifier) {
         this.beanType = beanType;
         this.singleton = singleton;
         this.qualifier = qualifier;
     }
 
-    public Class<?> getBeanType() {
+    public Class<T> getBeanType() {
         return beanType;
     }
 
