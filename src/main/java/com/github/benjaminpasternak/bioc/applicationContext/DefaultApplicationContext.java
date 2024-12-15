@@ -9,14 +9,14 @@ import java.util.List;
 
 public class DefaultApplicationContext implements ApplicationContext {
     private final BeanRegistry beanRegistry;
-    private final BeanFactoryRefactor beanFactory;
+    private final BeanFactory beanFactory;
     private final List<BeanDefinition> beanDefinitions;
     private volatile boolean refreshed = false; // visibility across threads
 
 
     public DefaultApplicationContext(String basePackage) {
         this.beanRegistry = new DefaultBeanRegistry();
-        this.beanFactory = new BeanFactoryRefactor(beanRegistry);
+        this.beanFactory = new BeanFactory(beanRegistry);
         BeanDefinitionScanner scanner = new BeanDefinitionScanner(basePackage);
         this.beanDefinitions = scanner.scan();
     }
