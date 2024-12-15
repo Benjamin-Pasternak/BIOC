@@ -77,8 +77,10 @@ public class DefaultBeanRegistry implements BeanRegistry {
         }
         Map<String, Object> beans = beanRegistry.get(type);
         if (beans != null) {
+            // remove the specific quantifier - instance mapping
             beans.remove(qualifier);
             if (beans.isEmpty()) {
+                // if no more quantifiers exist remove the type from the registry
                 beanRegistry.remove(type);
             }
         }

@@ -43,6 +43,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.11.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
@@ -83,6 +89,14 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/github/benjaminpasternak/bioc/test/*</exclude>
+                        <exclude>com/github/benjaminpasternak/bioc/annotations/*</exclude>
+                        <exclude>com/github/benjaminpasternak/bioc/exceptions/*</exclude>
+                        <exclude>com/github/benjaminpasternak/bioc/Main.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <!-- Prepare JaCoCo for test coverage -->
                     <execution>
